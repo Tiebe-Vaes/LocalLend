@@ -36,6 +36,7 @@ dependencies:
   # Utilities
   intl: 0.20.2
   uuid: ^4.5.1
+  flutter_dotenv: ^5.1.0
 
   # Dev helper
   device_preview: ^1.3.1
@@ -49,3 +50,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - .env

@@ -1,3 +1,14 @@
+# SENSITIVE DATA - NEVER COMMIT
+.env
+.env.local
+.env.*.local
+*.key
+*.jks
+*.p12
+google-services.json
+GoogleService-Info.plist
+ios/Runner/GoogleService-Info.plist
+
 # Miscellaneous
 *.class
 *.log
@@ -23,6 +34,11 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
+# VSCode settings
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -43,3 +59,18 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+android/local.properties
+android/.gradle/
+android/.idea/
+android/**/*.iml
+
+# IDE & Editor
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+Thumbs.db
+
+# Pubspec lock (use version from git)
+pubspec.lock
