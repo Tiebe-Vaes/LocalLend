@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "41314805136",
+    "project_id": "locallend-f965e",
+    "storage_bucket": "locallend-f965e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:41314805136:android:d1d80207fe7575e79b7f15",
+        "android_client_info": {
+          "package_name": "com.example.locallend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsy3BGwwRevgMFGtIKDR-cbw8aKa4stwg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
