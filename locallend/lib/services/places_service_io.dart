@@ -19,7 +19,7 @@ class PlacesService {
       {
         'input': input,
         'key': _key,
-        if (sessionToken != null) 'sessiontoken': sessionToken,
+        'sessiontoken': ?sessionToken,
       },
     );
     final res = await _client.get(uri);
@@ -43,7 +43,7 @@ class PlacesService {
         'place_id': placeId,
         'fields': 'geometry/location,formatted_address',
         'key': _key,
-        if (sessionToken != null) 'sessiontoken': sessionToken,
+        'sessiontoken': ?sessionToken,
       },
     );
     final res = await _client.get(uri);
