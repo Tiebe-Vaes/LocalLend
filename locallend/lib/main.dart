@@ -9,6 +9,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/config.dart';
+import 'core/maps_loader.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/seed_service.dart';
@@ -18,6 +20,8 @@ Future<void> main() async {
 
   // Load environment variables
   await dotenv.load(fileName: '.env');
+
+  await loadGoogleMapsScript(AppConfig.googleMapsApiKey);
 
   try {
     await Firebase.initializeApp(

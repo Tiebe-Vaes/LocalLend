@@ -18,7 +18,8 @@ class BookingScreen extends ConsumerStatefulWidget {
 
 class _BookingScreenState extends ConsumerState<BookingScreen> {
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
-  final Set<String> _selected = {};
+  DateTime? _start;
+  DateTime? _end;
   Set<String> _blocked = {};
   bool _loading = true;
   bool _placing = false;
@@ -41,14 +42,63 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     }
   }
 
+  List<DateTime> _selectedDays() {
+    if (_start == null) return const [];
+    final s = _start!;
+    final e = _end ?? _start!;
+    final out = <DateTime>[];
+    for (var d = s; !d.isAfter(e); d = d.add(const Duration(days: 1))) {
+      out.add(d);
+    }
+    return out;
+  }
+
+  bool _rangeHasBlocked(DateTime s, DateTime e) {
+    for (var d = s; !d.isAfter(e); d = d.add(const Duration(days: 1))) {
+      if (_blocked.contains(dayKey(d))) return true;
+    }
+    return false;
+  }
+
+  void _onTapDay(DateTime day) {
+    final today = dayOnly(DateTime.now());
+    if (day.isBefore(today)) return;
+    if (_blocked.contains(dayKey(day))) return;
+
+    setState(() {
+      if (_start == null || (_start != null && _end != null)) {
+        _start = day;
+        _end = null;
+      } else {
+        if (day.isBefore(_start!)) {
+          _start = day;
+          _end = null;
+        } else {
+          if (_rangeHasBlocked(_start!, day)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content:
+                      Text('Range overlaps a booked day. Pick another.')),
+            );
+            _start = day;
+            _end = null;
+          } else {
+            _end = day;
+          }
+        }
+      }
+    });
+  }
+
   Future<void> _place() async {
-    if (_selected.isEmpty) return;
+    final days = _selectedDays();
+    if (days.isEmpty) return;
     final me = ref.read(appUserProvider).value;
-    final item = await ref.read(itemRepositoryProvider).fetchItem(widget.itemId);
+    final item =
+        await ref.read(itemRepositoryProvider).fetchItem(widget.itemId);
     if (me == null || item == null) return;
     setState(() => _placing = true);
     try {
-      final days = _selected.map(_parseDayKey).toList();
       final booking = Booking(
         id: '',
         itemId: item.id,
@@ -61,15 +111,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         status: BookingStatus.upcoming,
         createdAt: DateTime.now(),
       );
-      final saved = await ref.read(bookingRepositoryProvider).createBooking(booking);
+      final saved =
+          await ref.read(bookingRepositoryProvider).createBooking(booking);
       await NotificationService.instance.scheduleRentalEndingSoon(
         id: saved.id.hashCode,
         itemTitle: item.title,
         lastDay: booking.lastDay,
       );
-      if (mounted) {
-        _showSuccess(context);
-      }
+      if (mounted) _showSuccess(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,17 +152,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  DateTime _parseDayKey(String k) {
-    final parts = k.split('-').map(int.parse).toList();
-    return DateTime(parts[0], parts[1], parts[2]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final item = ref.watch(itemProvider(widget.itemId)).value;
     final days = _daysInMonth(_month);
     final firstWeekday = DateTime(_month.year, _month.month, 1).weekday;
-    final totalPrice = _selected.length * (item?.pricePerDay ?? 0);
+    final selectedDays = _selectedDays();
+    final totalPrice = selectedDays.length * (item?.pricePerDay ?? 0);
 
     return Scaffold(
       appBar: AppBar(
@@ -121,7 +166,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Select days'),
+        title: const Text('Pick rental dates'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -129,6 +174,23 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      _start == null
+                          ? 'Tap a day to start. Tap a second day for a range, or rent a single day.'
+                          : _end == null
+                              ? 'Start: ${_fmt(_start!)} — tap an end day, or place order for 1 day.'
+                              : '${_fmt(_start!)}  →  ${_fmt(_end!)}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       IconButton(
@@ -193,7 +255,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     ),
                     child: Row(
                       children: [
-                        Text('${_selected.length} day(s) selected'),
+                        Text('${selectedDays.length} day(s)'),
                         const Spacer(),
                         Text('€${totalPrice.toStringAsFixed(0)}',
                             style: const TextStyle(
@@ -206,7 +268,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   PrimaryButton(
                     label: 'Place order',
                     loading: _placing,
-                    onPressed: _selected.isEmpty ? null : _place,
+                    onPressed: selectedDays.isEmpty ? null : _place,
                   ),
                 ],
               ),
@@ -215,17 +277,25 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Widget _buildDayCell(DateTime day) {
-    final key = dayKey(day);
-    final isPast = dayOnly(day).isBefore(dayOnly(DateTime.now()));
-    final isBlocked = _blocked.contains(key) || isPast;
-    final isSelected = _selected.contains(key);
+    final today = dayOnly(DateTime.now());
+    final isPast = dayOnly(day).isBefore(today);
+    final isBlocked = _blocked.contains(dayKey(day)) || isPast;
+
+    final s = _start;
+    final e = _end ?? _start;
+    final inRange = s != null &&
+        e != null &&
+        !day.isBefore(dayOnly(s)) &&
+        !day.isAfter(dayOnly(e));
+    final isStart = s != null && dayOnly(day) == dayOnly(s);
+    final isEnd = e != null && dayOnly(day) == dayOnly(e);
 
     Color bg;
     Color fg;
     if (isBlocked) {
       bg = AppColors.background;
       fg = AppColors.textMuted;
-    } else if (isSelected) {
+    } else if (inRange) {
       bg = AppColors.primary;
       fg = Colors.white;
     } else {
@@ -234,21 +304,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     }
 
     return GestureDetector(
-      onTap: isBlocked
-          ? null
-          : () => setState(() {
-                if (isSelected) {
-                  _selected.remove(key);
-                } else {
-                  _selected.add(key);
-                }
-              }),
+      onTap: isBlocked ? null : () => _onTapDay(day),
       child: Container(
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border),
+            color: (isStart || isEnd)
+                ? AppColors.primaryDark
+                : (inRange ? AppColors.primary : AppColors.border),
+            width: (isStart || isEnd) ? 2 : 1,
+          ),
         ),
         child: Center(
           child: Text(
@@ -276,4 +342,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     ];
     return '${months[m.month - 1]} ${m.year}';
   }
+
+  String _fmt(DateTime d) =>
+      '${d.day}/${d.month.toString().padLeft(2, '0')}';
 }

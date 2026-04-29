@@ -8,6 +8,7 @@ import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/item.dart';
 import '../../providers/providers.dart';
+import '../../widgets/address_field.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rounded_text_field.dart';
@@ -23,9 +24,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   final _title = TextEditingController();
   final _desc = TextEditingController();
   final _price = TextEditingController();
-  final _location = TextEditingController();
+  final _address = TextEditingController();
   String _categoryId = kCategories.first.id;
   LatLng? _point;
+  String _formattedAddress = '';
   GoogleMapController? _mapCtrl;
   bool _saving = false;
 
@@ -34,7 +36,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     _title.dispose();
     _desc.dispose();
     _price.dispose();
-    _location.dispose();
+    _address.dispose();
     super.dispose();
   }
 
@@ -48,16 +50,32 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       }
       final pos = await Geolocator.getCurrentPosition();
       final ll = LatLng(pos.latitude, pos.longitude);
-      setState(() => _point = ll);
-      _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 14));
+      final addr = await ref
+          .read(placesServiceProvider)
+          .reverseGeocode(pos.latitude, pos.longitude);
+      setState(() {
+        _point = ll;
+        _formattedAddress = addr ?? '';
+        _address.text = _formattedAddress;
+      });
+      _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15));
     } catch (_) {}
+  }
+
+  void _onAddressPicked(AddressPickResult r) {
+    final ll = LatLng(r.lat, r.lng);
+    setState(() {
+      _point = ll;
+      _formattedAddress = r.formattedAddress;
+    });
+    _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15));
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_point == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please pick a location on the map.')),
+        const SnackBar(content: Text('Please pick an address.')),
       );
       return;
     }
@@ -78,7 +96,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         imageUrl: null,
         lat: _point!.latitude,
         lng: _point!.longitude,
-        locationLabel: _location.text.trim().isEmpty ? 'Nearby' : _location.text.trim(),
+        locationLabel: _formattedAddress,
         createdAt: DateTime.now(),
       );
       await itemRepo.addItem(item);
@@ -166,23 +184,25 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               },
             ),
             const SizedBox(height: 12),
-            RoundedTextField(
-              controller: _location,
-              label: 'Location label',
-              hint: 'e.g. Antwerp, Zuid',
+            AddressField(
+              controller: _address,
+              onPicked: _onAddressPicked,
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _useCurrentLocation,
+              icon: const Icon(Icons.my_location),
+              label: const Text('Use current location'),
             ),
             const SizedBox(height: 12),
-            const Text('Pin location (tap map)'),
-            const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: SizedBox(
-                height: 200,
+                height: 360,
                 child: GoogleMap(
                   initialCameraPosition:
                       CameraPosition(target: initial, zoom: 13),
                   onMapCreated: (c) => _mapCtrl = c,
-                  onTap: (ll) => setState(() => _point = ll),
                   markers: _point == null
                       ? {}
                       : {
@@ -191,14 +211,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             position: _point!,
                           ),
                         },
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _useCurrentLocation,
-              icon: const Icon(Icons.my_location),
-              label: const Text('Use current location'),
             ),
             const SizedBox(height: 20),
             PrimaryButton(

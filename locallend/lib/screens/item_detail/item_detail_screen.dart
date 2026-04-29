@@ -51,14 +51,34 @@ class ItemDetailScreen extends ConsumerWidget {
                 ),
                 actions: [
                   if (me != null && me.id != item.ownerId)
-                    IconButton(
-                      icon: Icon(
-                        isFav ? Icons.favorite : Icons.favorite_outline,
-                        color: isFav ? AppColors.danger : AppColors.textMuted,
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        iconSize: 26,
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.12),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_outline,
+                            color:
+                                isFav ? AppColors.danger : AppColors.textPrimary,
+                            size: 24,
+                          ),
+                        ),
+                        onPressed: () => ref
+                            .read(authRepositoryProvider)
+                            .toggleFavorite(me.id, itemId, !isFav),
                       ),
-                      onPressed: () => ref
-                          .read(authRepositoryProvider)
-                          .toggleFavorite(me.id, itemId, !isFav),
                     ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
@@ -97,13 +117,6 @@ class ItemDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Row(children: [
-                        const Icon(Icons.location_on_outlined,
-                            size: 16, color: AppColors.textMuted),
-                        const SizedBox(width: 4),
-                        Text(item.locationLabel,
-                            style: const TextStyle(
-                                color: AppColors.textMuted)),
-                        const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
@@ -119,14 +132,41 @@ class ItemDetailScreen extends ConsumerWidget {
                         ),
                       ]),
                       const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.place_outlined,
+                                size: 20, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.locationLabel.isNotEmpty
+                                    ? item.locationLabel
+                                    : '${item.lat.toStringAsFixed(5)}, ${item.lng.toStringAsFixed(5)}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: SizedBox(
-                          height: 160,
+                          height: 320,
                           child: GoogleMap(
                             initialCameraPosition: CameraPosition(
                               target: LatLng(item.lat, item.lng),
-                              zoom: 14,
+                              zoom: 15,
                             ),
                             markers: {
                               Marker(
@@ -134,8 +174,7 @@ class ItemDetailScreen extends ConsumerWidget {
                                 position: LatLng(item.lat, item.lng),
                               ),
                             },
-                            liteModeEnabled: true,
-                            zoomControlsEnabled: false,
+                            zoomControlsEnabled: true,
                             myLocationButtonEnabled: false,
                           ),
                         ),

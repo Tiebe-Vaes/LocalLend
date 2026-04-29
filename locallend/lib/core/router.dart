@@ -12,6 +12,7 @@ import '../screens/favorites/favorites_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/item_detail/booking_screen.dart';
 import '../screens/item_detail/item_detail_screen.dart';
+import '../screens/map/map_screen.dart';
 import '../screens/shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -48,6 +49,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/map', builder: (_, _) => const MapScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(

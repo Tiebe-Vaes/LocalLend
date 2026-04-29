@@ -13,6 +13,7 @@ import '../repositories/booking_repository.dart';
 import '../repositories/item_repository.dart';
 import '../repositories/review_repository.dart';
 import '../repositories/storage_repository.dart';
+import '../services/places_service.dart';
 
 // Firebase singletons
 final firebaseAuthProvider = Provider<FirebaseAuth>((_) => FirebaseAuth.instance);
@@ -31,6 +32,8 @@ final reviewRepositoryProvider =
     Provider<ReviewRepository>((ref) => ReviewRepository(ref.watch(firestoreProvider)));
 final storageRepositoryProvider =
     Provider<StorageRepository>((_) => StorageRepository());
+final placesServiceProvider =
+    Provider<PlacesService>((_) => PlacesService());
 
 // Auth streams
 final authStateProvider = StreamProvider<User?>(

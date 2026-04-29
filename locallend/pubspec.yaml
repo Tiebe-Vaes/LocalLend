@@ -37,9 +37,13 @@ dependencies:
   intl: 0.20.2
   uuid: ^4.5.1
   flutter_dotenv: ^5.1.0
+  http: ^1.2.2
 
   # Dev helper
   device_preview: ^1.3.1
+
+  # Web interop
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

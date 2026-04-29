@@ -7,6 +7,7 @@ class MainShell extends StatelessWidget {
 
   static const _items = [
     (icon: Icons.home_outlined, active: Icons.home, label: 'Home'),
+    (icon: Icons.map_outlined, active: Icons.map, label: 'Map'),
     (icon: Icons.favorite_outline, active: Icons.favorite, label: 'Favorites'),
     (icon: Icons.add_circle_outline, active: Icons.add_circle, label: 'Add'),
     (icon: Icons.inbox_outlined, active: Icons.inbox, label: 'Dashboard'),
