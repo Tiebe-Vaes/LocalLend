@@ -2,10 +2,7 @@
 
 **Tiebe Vaes & Natalia Kowal — Groep 17**
 
-LocalLend is a Flutter application for renting and lending household items
-between neighbours. Owners list items with a price, location, and category;
-renters browse nearby items, view them on a map, book date ranges, and leave
-reviews.
+LocalLend is a mobile application that allows users to rent and lend household items in their neighbourhood. Users can explore items via an interactive map, manage date-based bookings, and leave reviews. The app is built with Flutter (Dart), utilizing Firebase (Auth and Firestore) for the backend and the Google Maps & Places APIs for location services.
 
 ---
 
