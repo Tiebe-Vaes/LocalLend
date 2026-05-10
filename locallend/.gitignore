@@ -76,3 +76,5 @@ Thumbs.db
 
 # Pubspec lock (use version from git)
 pubspec.lock
+.DS_Store
+**/.DS_Store
