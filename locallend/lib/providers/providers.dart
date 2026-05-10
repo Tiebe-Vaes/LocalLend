@@ -16,28 +16,38 @@ import '../repositories/storage_repository.dart';
 import '../services/places_service.dart';
 
 // Firebase singletons
-final firebaseAuthProvider = Provider<FirebaseAuth>((_) => FirebaseAuth.instance);
-final firestoreProvider =
-    Provider<FirebaseFirestore>((_) => FirebaseFirestore.instance);
+final firebaseAuthProvider = Provider<FirebaseAuth>(
+  (_) => FirebaseAuth.instance,
+);
+final firestoreProvider = Provider<FirebaseFirestore>(
+  (_) => FirebaseFirestore.instance,
+);
 
 // Repositories
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(ref.watch(firebaseAuthProvider), ref.watch(firestoreProvider)),
+  (ref) => AuthRepository(
+    ref.watch(firebaseAuthProvider),
+    ref.watch(firestoreProvider),
+  ),
 );
-final itemRepositoryProvider =
-    Provider<ItemRepository>((ref) => ItemRepository(ref.watch(firestoreProvider)));
+final itemRepositoryProvider = Provider<ItemRepository>(
+  (ref) => ItemRepository(ref.watch(firestoreProvider)),
+);
 final bookingRepositoryProvider = Provider<BookingRepository>(
-    (ref) => BookingRepository(ref.watch(firestoreProvider)));
-final reviewRepositoryProvider =
-    Provider<ReviewRepository>((ref) => ReviewRepository(ref.watch(firestoreProvider)));
-final storageRepositoryProvider =
-    Provider<StorageRepository>((_) => StorageRepository());
-final placesServiceProvider =
-    Provider<PlacesService>((_) => PlacesService());
+  (ref) => BookingRepository(ref.watch(firestoreProvider)),
+);
+final reviewRepositoryProvider = Provider<ReviewRepository>(
+  (ref) => ReviewRepository(ref.watch(firestoreProvider)),
+);
+final storageRepositoryProvider = Provider<StorageRepository>(
+  (_) => StorageRepository(),
+);
+final placesServiceProvider = Provider<PlacesService>((_) => PlacesService());
 
 // Auth streams
 final authStateProvider = StreamProvider<User?>(
-    (ref) => ref.watch(authRepositoryProvider).authStateChanges());
+  (ref) => ref.watch(authRepositoryProvider).authStateChanges(),
+);
 
 final appUserProvider = StreamProvider<AppUser?>((ref) {
   final user = ref.watch(authStateProvider).value;
@@ -47,27 +57,40 @@ final appUserProvider = StreamProvider<AppUser?>((ref) {
 
 // Items
 final itemsProvider = StreamProvider<List<Item>>(
-    (ref) => ref.watch(itemRepositoryProvider).watchAll());
+  (ref) => ref.watch(itemRepositoryProvider).watchAll(),
+);
+
+final allItemsProvider = StreamProvider<List<Item>>((ref) {
+  return ref
+      .read(itemRepositoryProvider)
+      .getAllItems(); // no radius/category filter
+});
 
 final itemProvider = StreamProvider.family<Item?, String>(
-    (ref, id) => ref.watch(itemRepositoryProvider).watchItem(id));
+  (ref, id) => ref.watch(itemRepositoryProvider).watchItem(id),
+);
 
 final itemsByOwnerProvider = StreamProvider.family<List<Item>, String>(
-    (ref, ownerId) => ref.watch(itemRepositoryProvider).watchByOwner(ownerId));
+  (ref, ownerId) => ref.watch(itemRepositoryProvider).watchByOwner(ownerId),
+);
 
 // Reviews
 final reviewsByItemProvider = StreamProvider.family<List<Review>, String>(
-    (ref, itemId) => ref.watch(reviewRepositoryProvider).watchByItem(itemId));
+  (ref, itemId) => ref.watch(reviewRepositoryProvider).watchByItem(itemId),
+);
 
 // Bookings
 final bookingsAsRenterProvider = StreamProvider.family<List<Booking>, String>(
-    (ref, uid) => ref.watch(bookingRepositoryProvider).watchByRenter(uid));
+  (ref, uid) => ref.watch(bookingRepositoryProvider).watchByRenter(uid),
+);
 
 final bookingsAsOwnerProvider = StreamProvider.family<List<Booking>, String>(
-    (ref, uid) => ref.watch(bookingRepositoryProvider).watchByOwner(uid));
+  (ref, uid) => ref.watch(bookingRepositoryProvider).watchByOwner(uid),
+);
 
 final bookingsByItemProvider = StreamProvider.family<List<Booking>, String>(
-    (ref, itemId) => ref.watch(bookingRepositoryProvider).watchByItem(itemId));
+  (ref, itemId) => ref.watch(bookingRepositoryProvider).watchByItem(itemId),
+);
 
 // Browse filter state
 class BrowseFilter {
@@ -84,14 +107,13 @@ class BrowseFilter {
     Object? categoryId = const _Sentinel(),
     double? radiusKm,
     String? query,
-  }) =>
-      BrowseFilter(
-        categoryId: categoryId is _Sentinel
-            ? this.categoryId
-            : categoryId as String?,
-        radiusKm: radiusKm ?? this.radiusKm,
-        query: query ?? this.query,
-      );
+  }) => BrowseFilter(
+    categoryId: categoryId is _Sentinel
+        ? this.categoryId
+        : categoryId as String?,
+    radiusKm: radiusKm ?? this.radiusKm,
+    query: query ?? this.query,
+  );
 }
 
 class _Sentinel {
@@ -107,7 +129,8 @@ class BrowseFilterNotifier extends StateNotifier<BrowseFilter> {
 
 final browseFilterProvider =
     StateNotifierProvider<BrowseFilterNotifier, BrowseFilter>(
-        (_) => BrowseFilterNotifier());
+      (_) => BrowseFilterNotifier(),
+    );
 
 // Filtered items derived from items + user location + filter
 final filteredItemsProvider = Provider<AsyncValue<List<Item>>>((ref) {

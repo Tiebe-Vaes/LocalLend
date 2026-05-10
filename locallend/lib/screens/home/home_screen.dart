@@ -17,6 +17,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _searchCtrl = TextEditingController();
+  bool _showAll = false;
 
   @override
   void initState() {
@@ -41,7 +42,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .read(authRepositoryProvider)
             .updateLocation(uid, pos.latitude, pos.longitude);
       }
-    } catch (_) {/* fail silently on the demo */}
+    } catch (_) {
+      /* fail silently on the demo */
+    }
   }
 
   @override
@@ -64,7 +67,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(filteredItemsProvider);
+    final items = _showAll
+        ? ref.watch(allItemsProvider) // raw unfiltered stream
+        : ref.watch(filteredItemsProvider);
     final user = ref.watch(appUserProvider).value;
 
     return Scaffold(
@@ -80,15 +85,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Hello 👋',
-                            style: TextStyle(color: AppColors.textMuted)),
+                        const Text(
+                          'Hello 👋',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
                         const SizedBox(height: 2),
                         Text(
                           user?.displayName.isNotEmpty == true
                               ? user!.displayName
                               : 'Browse nearby items',
                           style: const TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.w700),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'All items',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _showAll
+                                    ? AppColors.primary
+                                    : AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Switch(
+                              value: _showAll,
+                              activeColor: AppColors.primary,
+                              onChanged: (v) => setState(() => _showAll = v),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -137,17 +166,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
                   if (i == 0) {
-                    final selected = ref
-                            .watch(browseFilterProvider)
-                            .categoryId ==
-                        null;
+                    final selected =
+                        ref.watch(browseFilterProvider).categoryId == null;
                     return InkWell(
                       onTap: () => ref
                           .read(browseFilterProvider.notifier)
                           .setCategory(null),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: selected
                               ? AppColors.primary
@@ -184,24 +213,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 12),
             Expanded(
               child: items.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('Error: $e')),
                 data: (list) {
                   if (list.isEmpty) {
                     return const Center(
-                        child: Text('No items match your filters.',
-                            style: TextStyle(color: AppColors.textMuted)));
+                      child: Text(
+                        'No items match your filters.',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                    );
                   }
                   return GridView.builder(
                     padding: const EdgeInsets.all(20),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.72,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.72,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                        ),
                     itemCount: list.length,
                     itemBuilder: (_, i) {
                       final it = list[i];
@@ -248,8 +279,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Filter',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const Text(
+            'Filter',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 16),
           const Text('Category'),
           const SizedBox(height: 8),
@@ -261,8 +294,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 CategoryChip(
                   category: c,
                   selected: _catId == c.id,
-                  onTap: () => setState(
-                      () => _catId = _catId == c.id ? null : c.id),
+                  onTap: () =>
+                      setState(() => _catId = _catId == c.id ? null : c.id),
                 ),
             ],
           ),

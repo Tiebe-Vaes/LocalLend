@@ -28,6 +28,7 @@ dependencies:
 
   # Media
   cached_network_image: ^3.4.1
+  image_picker: ^1.0.0
 
   # Notifications
   flutter_local_notifications: ^17.2.3

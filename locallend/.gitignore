@@ -71,6 +71,8 @@ android/**/*.iml
 
 # OS
 Thumbs.db
+._*
+.DS_Store
 
 # Pubspec lock (use version from git)
 pubspec.lock

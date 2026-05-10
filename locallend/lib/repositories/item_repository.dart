@@ -28,6 +28,13 @@ class ItemRepository {
     return doc.exists ? Item.fromDoc(doc) : null;
   }
 
+  Stream<List<Item>> getAllItems() {
+    return _items
+        .where('available', isEqualTo: true)
+        .snapshots()
+        .map((s) => s.docs.map((d) => Item.fromDoc(d)).toList());
+  }
+
   Future<String> addItem(Item item) async {
     final ref = await _items.add(item.toMap());
     return ref.id;

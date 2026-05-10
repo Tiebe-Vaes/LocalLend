@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
+import 'dart:io';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -30,6 +33,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   String _formattedAddress = '';
   GoogleMapController? _mapCtrl;
   bool _saving = false;
+  XFile? _selectedImage;
+  String? _base64Image;
 
   @override
   void dispose() {
@@ -60,6 +65,27 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       });
       _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15));
     } catch (_) {}
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final base64String = base64Encode(bytes);
+        setState(() {
+          _selectedImage = image;
+          _base64Image = base64String;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
   }
 
   void _onAddressPicked(AddressPickResult r) {
@@ -93,7 +119,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         description: _desc.text.trim(),
         categoryId: _categoryId,
         pricePerDay: double.parse(_price.text.trim()),
-        imageUrl: null,
+        imageUrl: _base64Image,
         lat: _point!.latitude,
         lng: _point!.longitude,
         locationLabel: _formattedAddress,
@@ -121,28 +147,27 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.textMuted),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Image uploads unavailable in your region. Items will display with category icons.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
-                      ),
-                    ),
+            if (_selectedImage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  child: Image.file(
+                    File(_selectedImage!.path),
+                    fit: BoxFit.cover,
                   ),
-                ],
+                ),
               ),
+            OutlinedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.image),
+              label: Text(_selectedImage == null ? 'Add image' : 'Change image'),
             ),
             const SizedBox(height: 16),
             RoundedTextField(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:convert';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -16,6 +17,32 @@ import '../../widgets/section_header.dart';
 class ItemDetailScreen extends ConsumerWidget {
   const ItemDetailScreen({super.key, required this.itemId});
   final String itemId;
+
+  Widget _buildImage(String imageData) {
+    try {
+      if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+        return CachedNetworkImage(
+          imageUrl: imageData,
+          fit: BoxFit.cover,
+        );
+      } else {
+        final imageBytes = base64Decode(imageData);
+        return Image.memory(
+          imageBytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: AppColors.background,
+            child: const Icon(Icons.broken_image, color: AppColors.textMuted),
+          ),
+        );
+      }
+    } catch (_) {
+      return Container(
+        color: AppColors.background,
+        child: const Icon(Icons.broken_image, color: AppColors.textMuted),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,10 +115,7 @@ class ItemDetailScreen extends ConsumerWidget {
                           child: Icon(cat.icon,
                               size: 80, color: AppColors.textMuted),
                         )
-                      : CachedNetworkImage(
-                          imageUrl: item.imageUrl!,
-                          fit: BoxFit.cover,
-                        ),
+                      : _buildImage(item.imageUrl!),
                 ),
               ),
               SliverToBoxAdapter(

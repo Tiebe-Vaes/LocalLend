@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 import '../core/constants.dart';
 import '../core/theme.dart';
@@ -19,6 +20,37 @@ class ItemCard extends StatelessWidget {
   final VoidCallback onTap;
   final double? userLat;
   final double? userLng;
+
+  Widget _buildImage(String imageData) {
+    try {
+      if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+        return CachedNetworkImage(
+          imageUrl: imageData,
+          fit: BoxFit.cover,
+          placeholder: (_, _) => Container(color: AppColors.background),
+          errorWidget: (_, _, _) => Container(
+            color: AppColors.background,
+            child: const Icon(Icons.broken_image, color: AppColors.textMuted),
+          ),
+        );
+      } else {
+        final imageBytes = base64Decode(imageData);
+        return Image.memory(
+          imageBytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: AppColors.background,
+            child: const Icon(Icons.broken_image, color: AppColors.textMuted),
+          ),
+        );
+      }
+    } catch (_) {
+      return Container(
+        color: AppColors.background,
+        child: const Icon(Icons.broken_image, color: AppColors.textMuted),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,17 +91,7 @@ class ItemCard extends StatelessWidget {
                           child: Icon(cat.icon,
                               size: 40, color: AppColors.textMuted),
                         )
-                      : CachedNetworkImage(
-                          imageUrl: item.imageUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) =>
-                              Container(color: AppColors.background),
-                          errorWidget: (_, _, _) => Container(
-                            color: AppColors.background,
-                            child: const Icon(Icons.broken_image,
-                                color: AppColors.textMuted),
-                          ),
-                        ),
+                      : _buildImage(item.imageUrl!),
                 ),
               ),
               Padding(
