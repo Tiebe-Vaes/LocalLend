@@ -2,24 +2,35 @@
 
 **Tiebe Vaes & Natalia Kowal — Groep 17**
 
-LocalLend is a Flutter application for renting and lending household items
-between neighbours. Owners list items with a price, location, and category;
-renters browse nearby items, view them on a map, book date ranges, and leave
-reviews.
+LocalLend is a peer-to-peer rental app that lets neighbours lend household
+appliances and tools to each other. Owners list items with a description,
+category, photo, price and a per-day availability calendar; renters browse
+nearby items on a list or map, book the days they need, and leave reviews
+afterwards. Built with Flutter + Riverpod, backed by Firebase (Auth +
+Firestore), with Google Maps and Places for location features.
+
+The Flutter project lives in [`locallend/`](./locallend) — see
+[`locallend/README.md`](./locallend/README.md) for the full feature list,
+setup, and how to demo real-time sync with two browser tabs.
 
 ---
 
-## Features
+## Features at a glance
 
-- Email/password authentication (Firebase Auth)
-- Browse items with category, distance and text-search filters
-- Interactive map view of all available items
-- Item detail page with photos, address, embedded map, reviews
-- Address autocomplete via Google Places when listing an item
-- Date-range booking flow with conflict checking
-- Favourites
-- Renter and owner dashboards
-- Local notifications for rentals ending soon
+- Email/password authentication (Firebase Auth).
+- Browse items with category, distance and text-search filters.
+- Interactive Google Map of every available item.
+- Item detail with photo, address, embedded map and reviews.
+- Address autocomplete via Google Places + reverse-geocoding from GPS.
+- Multi-day per-item availability picker (non-consecutive days supported).
+- Booking calendar with transaction-safe conflict checking.
+- Owner-aware "Rent now" button (your-listing / unavailable /
+  currently-rented / rentable).
+- Cancellation frees the slots again live.
+- Per-user favourites.
+- Renter + owner dashboard with reseed-demo button.
+- Local notifications for rentals ending soon.
+- Real-time sync — Firestore streams push updates to every client.
 
 ## Tech stack
 
@@ -27,96 +38,39 @@ reviews.
 |------------------|--------------------------------------------|
 | Framework        | Flutter (Dart 3.11+)                       |
 | State management | Riverpod                                   |
-| Navigation       | go_router                                  |
+| Navigation       | go_router (StatefulShellRoute)             |
 | Backend          | Firebase Auth, Cloud Firestore             |
 | Maps & places    | google_maps_flutter, Google Places API     |
 | Notifications    | flutter_local_notifications                |
 | Configuration    | flutter_dotenv                             |
 
-## Project structure
+## Quick start
 
-```
-lib/
-  app.dart                  Root widget + theming
-  main.dart                 Entry point, env + Firebase init
-  core/                     Theme, router, utils, config, maps loader
-  models/                   AppUser, Item, Booking, Review
-  providers/                Riverpod providers
-  repositories/             Firestore data access
-  services/                 Notifications, Places, seed data
-  widgets/                  Reusable UI components
-  screens/
-    auth/                   Login, register
-    home/                   Browsing
-    map/                    Map view of all items
-    favorites/              Favourite items
-    add_item/               Listing flow
-    item_detail/            Detail + booking
-    dashboard/              Bookings overview
-    shell/                  Bottom-nav shell
-```
-
-## Getting started
-
-### Prerequisites
-
-- Flutter SDK 3.11 or newer
-- A Firebase project (Auth + Firestore enabled)
-- A Google Cloud project with these APIs enabled:
-  - Maps SDK for Android
-  - Maps JavaScript API (web)
-  - Places API
-  - Geocoding API
-
-### Configuration
-
-Copy `.env.example` to `.env` and fill in:
-
-```
-FIREBASE_API_KEY=...
-FIREBASE_APP_ID=...
-FIREBASE_MESSAGING_SENDER_ID=...
-FIREBASE_PROJECT_ID=...
-FIREBASE_STORAGE_BUCKET=...
-GOOGLE_MAPS_API_KEY=...
-ENVIRONMENT=development
-```
-
-The Google Maps key is also referenced in
-`android/app/src/main/AndroidManifest.xml` and is injected into
-`web/index.html` at runtime by `lib/core/maps_loader_web.dart`.
-
-### Install and run
-
-```
+```bash
+cd locallend
+cp .env.example .env        # fill in Firebase + Google Maps keys
 flutter pub get
 flutter run
 ```
 
-To target a specific device:
+## Demoing real-time sync (two tabs)
 
+Two web clients on different ports, one of them incognito so they don't
+share the Firebase Auth session:
+
+```bash
+# Terminal 1
+flutter run -d chrome --web-port=5000
+
+# Terminal 2
+flutter run -d chrome --web-port=5001 --web-browser-flag="--incognito"
 ```
-flutter devices
-flutter run -d <device-id>
-```
 
-### Build
+Sign in as two different accounts → list, book, cancel — each action shows
+up in the other window within ~1 s.
 
-```
-flutter build apk --release          # Android
-flutter build web --release           # Web
-```
-
-## Architecture notes
-
-- **Repositories** wrap Firestore collections and expose `Stream`-based APIs.
-- **Riverpod providers** in `lib/providers/providers.dart` compose repositories
-  and derived state (filtered items, auth state, etc.).
-- **PlacesService** has two implementations selected via conditional imports:
-  HTTP on mobile/desktop, the `google.maps.places` JS library on web (avoids
-  CORS).
-- **Bookings** store an explicit list of `days` plus `dayKeys` for fast
-  conflict queries (`arrayContainsAny`).
+Full demo script + alternative setups (two emulators, emulator + phone)
+are in [`locallend/README.md`](./locallend/README.md#testing-real-time-sync-with-two-tabs).
 
 ## Authors
 
