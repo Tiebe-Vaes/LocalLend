@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +7,7 @@ import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/review.dart';
 import '../../providers/providers.dart';
+import '../../widgets/item_image.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rating_stars.dart';
 import '../../widgets/rounded_text_field.dart';
@@ -82,16 +82,11 @@ class ItemDetailScreen extends ConsumerWidget {
                     ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: (item.imageUrl == null || item.imageUrl!.isEmpty)
-                      ? Container(
-                          color: AppColors.background,
-                          child: Icon(cat.icon,
-                              size: 80, color: AppColors.textMuted),
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: item.imageUrl!,
-                          fit: BoxFit.cover,
-                        ),
+                  background: ItemImage(
+                    item: item,
+                    placeholderIcon: cat.icon,
+                    placeholderSize: 80,
+                  ),
                 ),
               ),
               SliverToBoxAdapter(

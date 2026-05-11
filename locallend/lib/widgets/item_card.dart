@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../core/utils.dart';
 import '../models/item.dart';
+import 'item_image.dart';
 
 class ItemCard extends StatelessWidget {
   const ItemCard({
@@ -53,23 +53,7 @@ class ItemCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppRadius.md),
                   ),
-                  child: (item.imageUrl == null || item.imageUrl!.isEmpty)
-                      ? Container(
-                          color: AppColors.background,
-                          child: Icon(cat.icon,
-                              size: 40, color: AppColors.textMuted),
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: item.imageUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) =>
-                              Container(color: AppColors.background),
-                          errorWidget: (_, _, _) => Container(
-                            color: AppColors.background,
-                            child: const Icon(Icons.broken_image,
-                                color: AppColors.textMuted),
-                          ),
-                        ),
+                  child: ItemImage(item: item, placeholderIcon: cat.icon),
                 ),
               ),
               Padding(

@@ -39,5 +39,8 @@ class ItemRepository {
   Future<void> updateImage(String id, String url) =>
       _items.doc(id).update({'imageUrl': url});
 
+  Future<void> updateImageBase64(String id, String? base64) =>
+      _items.doc(id).update({'imageBase64': base64});
+
   Future<void> deleteItem(String id) => _items.doc(id).delete();
 }

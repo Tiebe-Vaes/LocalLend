@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,6 +9,15 @@ plugins {
     // Firebase
     id("com.google.gms.google-services")
 }
+
+val dotenv = Properties().apply {
+    val f = rootProject.file("../.env")
+    if (f.exists()) FileInputStream(f).use { load(it) }
+}
+val mapsApiKey: String =
+    (dotenv["GOOGLE_MAPS_API_KEY"] as String?)
+        ?: System.getenv("GOOGLE_MAPS_API_KEY")
+        ?: ""
 
 android {
     namespace = "com.example.locallend"
@@ -30,6 +42,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {

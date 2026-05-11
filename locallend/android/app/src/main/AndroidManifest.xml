@@ -13,11 +13,10 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Google Maps API key. Replace REPLACE_ME_MAPS_KEY with a real key
-             from Google Cloud Console (Maps SDK for Android enabled). -->
+        <!-- Maps key injected from locallend/.env via Gradle (manifestPlaceholders). -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAOJj2lcftnCQCwyb5ycjhSy3NSimK-Iz0"/>
+            android:value="${MAPS_API_KEY}"/>
 
         <activity
             android:name=".MainActivity"

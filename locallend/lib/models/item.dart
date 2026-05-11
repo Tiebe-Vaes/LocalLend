@@ -9,6 +9,7 @@ class Item {
   final String categoryId;
   final double pricePerDay;
   final String? imageUrl;
+  final String? imageBase64;
   final double lat;
   final double lng;
   final String locationLabel;
@@ -24,6 +25,7 @@ class Item {
     required this.categoryId,
     required this.pricePerDay,
     this.imageUrl,
+    this.imageBase64,
     required this.lat,
     required this.lng,
     required this.locationLabel,
@@ -31,7 +33,7 @@ class Item {
     required this.createdAt,
   });
 
-  Item copyWith({bool? available, String? imageUrl}) => Item(
+  Item copyWith({bool? available, String? imageUrl, String? imageBase64}) => Item(
         id: id,
         ownerId: ownerId,
         ownerName: ownerName,
@@ -40,6 +42,7 @@ class Item {
         categoryId: categoryId,
         pricePerDay: pricePerDay,
         imageUrl: imageUrl ?? this.imageUrl,
+        imageBase64: imageBase64 ?? this.imageBase64,
         lat: lat,
         lng: lng,
         locationLabel: locationLabel,
@@ -55,6 +58,7 @@ class Item {
         'categoryId': categoryId,
         'pricePerDay': pricePerDay,
         'imageUrl': imageUrl,
+        'imageBase64': imageBase64,
         'lat': lat,
         'lng': lng,
         'locationLabel': locationLabel,
@@ -73,6 +77,7 @@ class Item {
       categoryId: (d['categoryId'] ?? 'other') as String,
       pricePerDay: (d['pricePerDay'] as num?)?.toDouble() ?? 0.0,
       imageUrl: d['imageUrl'] as String?,
+      imageBase64: d['imageBase64'] as String?,
       lat: (d['lat'] as num?)?.toDouble() ?? 0.0,
       lng: (d['lng'] as num?)?.toDouble() ?? 0.0,
       locationLabel: (d['locationLabel'] ?? '') as String,

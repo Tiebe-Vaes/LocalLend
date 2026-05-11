@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -30,6 +34,86 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   String _formattedAddress = '';
   GoogleMapController? _mapCtrl;
   bool _saving = false;
+  Uint8List? _imageBytes;
+  String? _imageBase64;
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 70,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      // Firestore doc limit ~1MB. Reject if encoded would exceed ~900KB.
+      final encoded = base64Encode(bytes);
+      if (encoded.length > 900 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Image too large. Pick a smaller one.'),
+            ),
+          );
+        }
+        return;
+      }
+      setState(() {
+        _imageBytes = bytes;
+        _imageBase64 = encoded;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image pick failed: $e')),
+        );
+      }
+    }
+  }
+
+  void _showImageSourceSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            if (_imageBytes != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline,
+                    color: AppColors.danger),
+                title: const Text('Remove image'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _imageBytes = null;
+                    _imageBase64 = null;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -94,6 +178,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         categoryId: _categoryId,
         pricePerDay: double.parse(_price.text.trim()),
         imageUrl: null,
+        imageBase64: _imageBase64,
         lat: _point!.latitude,
         lng: _point!.longitude,
         locationLabel: _formattedAddress,
@@ -121,27 +206,48 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.textMuted),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Image uploads unavailable in your region. Items will display with category icons.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
+            GestureDetector(
+              onTap: _showImageSourceSheet,
+              child: Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _imageBytes == null
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo_outlined,
+                                size: 36, color: AppColors.textMuted),
+                            SizedBox(height: 8),
+                            Text('Add a photo',
+                                style: TextStyle(color: AppColors.textMuted)),
+                          ],
+                        ),
+                      )
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.memory(_imageBytes!, fit: BoxFit.cover),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Material(
+                              color: Colors.black54,
+                              shape: const CircleBorder(),
+                              child: IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.white, size: 18),
+                                onPressed: _showImageSourceSheet,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ],
               ),
             ),
             const SizedBox(height: 16),
