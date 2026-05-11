@@ -37,7 +37,10 @@ class BookingRepository {
           .where('itemId', isEqualTo: booking.itemId)
           .where('dayKeys', arrayContainsAny: booking.dayKeys)
           .get();
-      if (query.docs.isNotEmpty) {
+      final blocking = query.docs.where(
+        (d) => (d.data()['status'] ?? '') != BookingStatus.cancelled.name,
+      );
+      if (blocking.isNotEmpty) {
         throw StateError('One or more days already booked for this item.');
       }
       final ref = _bookings.doc();
@@ -57,12 +60,13 @@ class BookingRepository {
     });
   }
 
-  /// Returns the day-keys already taken for [itemId] (regardless of status).
+  /// Returns the day-keys taken by *non-cancelled* bookings for [itemId].
   Future<Set<String>> bookedDayKeysForItem(String itemId) async {
     final snap = await _bookings.where('itemId', isEqualTo: itemId).get();
     final result = <String>{};
     for (final d in snap.docs) {
       final b = Booking.fromDoc(d);
+      if (b.status == BookingStatus.cancelled) continue;
       result.addAll(b.dayKeys);
     }
     return result;
