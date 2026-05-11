@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/item.dart';
 import '../../providers/providers.dart';
+import '../../widgets/item_image.dart';
 
 /// Full-screen Google Map plotting every available item as a marker.
 class MapScreen extends ConsumerStatefulWidget {
@@ -102,6 +104,19 @@ class _ItemPreviewCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: ItemImage(
+                    item: item,
+                    placeholderIcon: categoryById(item.categoryId).icon,
+                    placeholderSize: 28,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
