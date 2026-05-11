@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../models/item.dart';
 
+/// Renders the right image for an item: inline base64 → URL → category icon.
 class ItemImage extends StatelessWidget {
   const ItemImage({
     super.key,

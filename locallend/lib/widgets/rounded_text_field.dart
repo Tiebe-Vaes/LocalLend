@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Themed text field with an optional label above and rounded corners.
 class RoundedTextField extends StatelessWidget {
   const RoundedTextField({
     super.key,

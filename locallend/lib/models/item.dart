@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// A listing in the marketplace — what an owner makes rentable.
 class Item {
   final String id;
   final String ownerId;
@@ -14,6 +15,7 @@ class Item {
   final double lng;
   final String locationLabel;
   final bool available;
+  final List<String> availableDayKeys;
   final DateTime createdAt;
 
   const Item({
@@ -30,10 +32,18 @@ class Item {
     required this.lng,
     required this.locationLabel,
     this.available = true,
+    this.availableDayKeys = const [],
     required this.createdAt,
   });
 
-  Item copyWith({bool? available, String? imageUrl, String? imageBase64}) => Item(
+  /// Returns a new instance with the given fields overridden.
+  Item copyWith({
+    bool? available,
+    String? imageUrl,
+    String? imageBase64,
+    List<String>? availableDayKeys,
+  }) =>
+      Item(
         id: id,
         ownerId: ownerId,
         ownerName: ownerName,
@@ -47,9 +57,11 @@ class Item {
         lng: lng,
         locationLabel: locationLabel,
         available: available ?? this.available,
+        availableDayKeys: availableDayKeys ?? this.availableDayKeys,
         createdAt: createdAt,
       );
 
+  /// Serialises the item to a Firestore-compatible map.
   Map<String, dynamic> toMap() => {
         'ownerId': ownerId,
         'ownerName': ownerName,
@@ -63,9 +75,11 @@ class Item {
         'lng': lng,
         'locationLabel': locationLabel,
         'available': available,
+        'availableDayKeys': availableDayKeys,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
+  /// Hydrates an [Item] from a Firestore document.
   factory Item.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
     return Item(
@@ -82,6 +96,9 @@ class Item {
       lng: (d['lng'] as num?)?.toDouble() ?? 0.0,
       locationLabel: (d['locationLabel'] ?? '') as String,
       available: (d['available'] ?? true) as bool,
+      availableDayKeys: ((d['availableDayKeys'] ?? const []) as List)
+          .map((e) => e.toString())
+          .toList(),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }

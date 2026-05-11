@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// A renter's star rating and text comment attached to one item.
 class Review {
   final String id;
   final String itemId;
@@ -19,6 +20,7 @@ class Review {
     required this.createdAt,
   });
 
+  /// Serialises the review to a Firestore-compatible map.
   Map<String, dynamic> toMap() => {
         'itemId': itemId,
         'userId': userId,
@@ -28,6 +30,7 @@ class Review {
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
+  /// Hydrates a [Review] from a Firestore document.
   factory Review.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
     return Review(

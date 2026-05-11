@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
+/// 5-star rating display; becomes tappable when [onChanged] is provided.
 class RatingStars extends StatelessWidget {
   const RatingStars({
     super.key,

@@ -7,6 +7,7 @@ import '../../providers/providers.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rounded_text_field.dart';
 
+/// Email/password sign-in screen, gated by the router redirect.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -27,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  /// Validates the form and attempts a Firebase sign-in.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Single source of truth for the app's color palette.
 class AppColors {
   static const primary = Color(0xFFFF8A3D);
   static const primaryDark = Color(0xFFE8701F);
@@ -12,12 +13,14 @@ class AppColors {
   static const success = Color(0xFF4CAF50);
 }
 
+/// Standard corner radii reused across cards, buttons and sheets.
 class AppRadius {
   static const sm = 12.0;
   static const md = 16.0;
   static const lg = 24.0;
 }
 
+/// Builds the Material 3 theme using the app palette.
 ThemeData buildAppTheme() {
   const base = ColorScheme.light(
     primary: AppColors.primary,

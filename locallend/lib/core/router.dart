@@ -15,6 +15,8 @@ import '../screens/item_detail/item_detail_screen.dart';
 import '../screens/map/map_screen.dart';
 import '../screens/shell/main_shell.dart';
 
+/// Builds the app's GoRouter, including the auth-gated redirect and the
+/// stateful bottom-tab shell.
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authStateProvider);
 
@@ -72,6 +74,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Bridges the Riverpod auth stream to a Listenable so GoRouter can refresh.
 class _Listenable extends ChangeNotifier {
   _Listenable(Ref ref) {
     ref.listen<AsyncValue<User?>>(

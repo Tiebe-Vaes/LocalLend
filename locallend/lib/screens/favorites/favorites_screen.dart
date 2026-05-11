@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../providers/providers.dart';
 import '../../widgets/item_card.dart';
 
+/// Grid of items the current user has marked as favourite.
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 

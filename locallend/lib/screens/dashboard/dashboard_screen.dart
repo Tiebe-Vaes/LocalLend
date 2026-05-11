@@ -9,8 +9,47 @@ import '../../models/item.dart';
 import '../../providers/providers.dart';
 import '../../widgets/section_header.dart';
 
+/// Personal dashboard: my rentals (as renter) and my listings (as owner).
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
+
+  /// Asks the user to confirm before wiping and re-seeding the database.
+  Future<void> _confirmReseed(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reseed demo data?'),
+        content: const Text(
+            'This deletes ALL items, bookings and reviews, then restores the demo dataset. This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reseed',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Reseeding…')),
+    );
+    try {
+      await ref.read(seedServiceProvider).reseedAll();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Reseed complete')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Reseed failed: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,6 +64,11 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          IconButton(
+            tooltip: 'Reseed demo data',
+            icon: const Icon(Icons.restart_alt),
+            onPressed: () => _confirmReseed(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
@@ -118,6 +162,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  /// Buckets bookings by their *computed* live status for display.
   Map<BookingStatus, List<Booking>> _groupByStatus(List<Booking> list) {
     final now = DateTime.now();
     final map = <BookingStatus, List<Booking>>{
@@ -134,6 +179,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
+/// Section header showing one booking status as a label.
 class _StatusLabel extends StatelessWidget {
   const _StatusLabel({required this.status});
   final BookingStatus status;
@@ -155,30 +201,40 @@ class _StatusLabel extends StatelessWidget {
   }
 }
 
+/// One row in the rentals list with a contextual cancel button.
 class _BookingTile extends ConsumerWidget {
   const _BookingTile({required this.booking});
   final Booking booking;
 
+  /// Confirms then cancels the booking, surfacing the result via a snackbar.
   void _showCancelConfirm(BuildContext context, WidgetRef ref) {
-    showDialog(
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(bookingRepositoryProvider);
+    showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('Cancel booking?'),
         content: Text(
             'Are you sure you want to cancel your booking for "${booking.itemTitle}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Keep'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () {
-              ref.read(bookingRepositoryProvider).cancel(booking.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Booking cancelled')),
-              );
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              try {
+                await repo.cancel(booking.id);
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Booking cancelled')),
+                );
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Cancel failed: $e')),
+                );
+              }
             },
             child: const Text('Cancel booking',
                 style: TextStyle(color: Colors.white)),
@@ -247,6 +303,7 @@ class _BookingTile extends ConsumerWidget {
   }
 }
 
+/// One row in the listings list with an availability toggle.
 class _ListingTile extends ConsumerWidget {
   const _ListingTile({required this.item});
   final Item item;

@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../models/item.dart';
 import '../../providers/providers.dart';
 
+/// Full-screen Google Map plotting every available item as a marker.
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
@@ -77,6 +78,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 }
 
+/// Floating card shown when a marker is tapped, opens detail on press.
 class _ItemPreviewCard extends StatelessWidget {
   const _ItemPreviewCard({
     required this.item,

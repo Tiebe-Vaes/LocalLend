@@ -14,7 +14,10 @@ import '../repositories/item_repository.dart';
 import '../repositories/review_repository.dart';
 import '../repositories/storage_repository.dart';
 import '../services/places_service.dart';
+import '../services/seed_service.dart';
 
+// Central Riverpod registry: Firebase singletons, repositories, streams and
+// the browse-filter state.
 // Firebase singletons
 final firebaseAuthProvider = Provider<FirebaseAuth>((_) => FirebaseAuth.instance);
 final firestoreProvider =
@@ -34,6 +37,8 @@ final storageRepositoryProvider =
     Provider<StorageRepository>((_) => StorageRepository());
 final placesServiceProvider =
     Provider<PlacesService>((_) => PlacesService());
+final seedServiceProvider =
+    Provider<SeedService>((ref) => SeedService(ref.watch(firestoreProvider)));
 
 // Auth streams
 final authStateProvider = StreamProvider<User?>(
@@ -70,6 +75,7 @@ final bookingsByItemProvider = StreamProvider.family<List<Booking>, String>(
     (ref, itemId) => ref.watch(bookingRepositoryProvider).watchByItem(itemId));
 
 // Browse filter state
+/// Immutable filter state driving the marketplace browse screen.
 class BrowseFilter {
   final String? categoryId;
   final double radiusKm;
@@ -80,6 +86,7 @@ class BrowseFilter {
     this.query = '',
   });
 
+  /// Returns a new instance with the given fields overridden.
   BrowseFilter copyWith({
     Object? categoryId = const _Sentinel(),
     double? radiusKm,
@@ -98,10 +105,14 @@ class _Sentinel {
   const _Sentinel();
 }
 
+/// Mutable controller for [BrowseFilter] exposed via [browseFilterProvider].
 class BrowseFilterNotifier extends StateNotifier<BrowseFilter> {
   BrowseFilterNotifier() : super(const BrowseFilter());
+  /// Sets the active category (null = all categories).
   void setCategory(String? id) => state = state.copyWith(categoryId: id);
+  /// Sets the search radius in kilometres.
   void setRadius(double km) => state = state.copyWith(radiusKm: km);
+  /// Sets the free-text search query.
   void setQuery(String q) => state = state.copyWith(query: q);
 }
 
@@ -109,7 +120,7 @@ final browseFilterProvider =
     StateNotifierProvider<BrowseFilterNotifier, BrowseFilter>(
         (_) => BrowseFilterNotifier());
 
-// Filtered items derived from items + user location + filter
+/// Derived list: applies category/query/radius filters to the items stream.
 final filteredItemsProvider = Provider<AsyncValue<List<Item>>>((ref) {
   final asyncItems = ref.watch(itemsProvider);
   final filter = ref.watch(browseFilterProvider);

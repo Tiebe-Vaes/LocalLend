@@ -4,12 +4,14 @@ import 'package:http/http.dart' as http;
 import '../core/config.dart';
 import 'places_types.dart';
 
+/// Native (mobile/desktop) implementation that calls Google Places REST APIs.
 class PlacesService {
   PlacesService({http.Client? client}) : _client = client ?? http.Client();
   final http.Client _client;
 
   String get _key => AppConfig.googleMapsApiKey;
 
+  /// Returns address suggestions for the user's query.
   Future<List<PlaceSuggestion>> autocomplete(String input,
       {String? sessionToken}) async {
     if (input.trim().isEmpty || _key.isEmpty) return const [];
@@ -34,6 +36,7 @@ class PlacesService {
         .toList();
   }
 
+  /// Resolves a Place id to its coordinates and formatted address.
   Future<PlaceDetails?> details(String placeId, {String? sessionToken}) async {
     if (_key.isEmpty) return null;
     final uri = Uri.https(
@@ -60,6 +63,7 @@ class PlacesService {
     );
   }
 
+  /// Converts coordinates back to a human-readable address.
   Future<String?> reverseGeocode(double lat, double lng) async {
     if (_key.isEmpty) return null;
     final uri = Uri.https(

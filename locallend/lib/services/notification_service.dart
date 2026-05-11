@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+/// Singleton wrapper around `flutter_local_notifications` for local reminders.
 class NotificationService {
   NotificationService._();
   static final instance = NotificationService._();
@@ -9,6 +10,7 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
+  /// Idempotently initialises plugin + timezone data.
   Future<void> init() async {
     if (_initialized) return;
     tz.initializeTimeZones();
@@ -17,6 +19,7 @@ class NotificationService {
     _initialized = true;
   }
 
+  /// Schedules a local notification 12h before [lastDay] ends.
   Future<void> scheduleRentalEndingSoon({
     required int id,
     required String itemTitle,

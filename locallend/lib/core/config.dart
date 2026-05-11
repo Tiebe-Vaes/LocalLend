@@ -1,5 +1,6 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// Strongly-typed accessors for values loaded from the `.env` file.
 class AppConfig {
   // Firebase
   static String get firebaseApiKey => dotenv.env['FIREBASE_API_KEY'] ?? '';

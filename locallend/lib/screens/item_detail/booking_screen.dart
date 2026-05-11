@@ -9,6 +9,7 @@ import '../../providers/providers.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/primary_button.dart';
 
+/// Calendar screen where a renter picks consecutive days for one item.
 class BookingScreen extends ConsumerStatefulWidget {
   const BookingScreen({super.key, required this.itemId});
   final String itemId;
@@ -30,6 +31,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     _loadBlocked();
   }
 
+  /// Fetches the day-keys already booked by other renters.
   Future<void> _loadBlocked() async {
     final booked = await ref
         .read(bookingRepositoryProvider)
@@ -42,6 +44,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     }
   }
 
+  /// Expands [_start]..[_end] into the inclusive list of selected days.
   List<DateTime> _selectedDays() {
     if (_start == null) return const [];
     final s = _start!;
@@ -53,6 +56,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return out;
   }
 
+  /// True when any day in the inclusive range is already booked.
   bool _rangeHasBlocked(DateTime s, DateTime e) {
     for (var d = s; !d.isAfter(e); d = d.add(const Duration(days: 1))) {
       if (_blocked.contains(dayKey(d))) return true;
@@ -60,9 +64,19 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return false;
   }
 
+  /// True when [day] is not in the owner's selected availability list.
+  bool _outsideWindow(DateTime day) {
+    final item = ref.read(itemProvider(widget.itemId)).value;
+    if (item == null) return false;
+    if (item.availableDayKeys.isEmpty) return false;
+    return !item.availableDayKeys.contains(dayKey(day));
+  }
+
+  /// Handles a calendar cell tap, updating start/end and rejecting overlaps.
   void _onTapDay(DateTime day) {
-    final today = dayOnly(DateTime.now());
-    if (day.isBefore(today)) return;
+    final tomorrow = dayOnly(DateTime.now()).add(const Duration(days: 1));
+    if (day.isBefore(tomorrow)) return;
+    if (_outsideWindow(day)) return;
     if (_blocked.contains(dayKey(day))) return;
 
     setState(() {
@@ -90,6 +104,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     });
   }
 
+  /// Persists the booking and schedules the rental-ending notification.
   Future<void> _place() async {
     final days = _selectedDays();
     if (days.isEmpty) return;
@@ -130,6 +145,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     }
   }
 
+  /// Shows the post-booking confirmation dialog.
   void _showSuccess(BuildContext context) {
     showDialog(
       context: context,
@@ -276,10 +292,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
+  /// Builds one cell of the month grid (past / blocked / selected styling).
   Widget _buildDayCell(DateTime day) {
-    final today = dayOnly(DateTime.now());
-    final isPast = dayOnly(day).isBefore(today);
-    final isBlocked = _blocked.contains(dayKey(day)) || isPast;
+    final tomorrow = dayOnly(DateTime.now()).add(const Duration(days: 1));
+    final tooEarly = dayOnly(day).isBefore(tomorrow);
+    final isBlocked =
+        _blocked.contains(dayKey(day)) || tooEarly || _outsideWindow(day);
 
     final s = _start;
     final e = _end ?? _start;
@@ -330,11 +348,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
+  /// All calendar days that belong to month [m].
   List<DateTime> _daysInMonth(DateTime m) {
     final last = DateTime(m.year, m.month + 1, 0).day;
     return [for (var i = 1; i <= last; i++) DateTime(m.year, m.month, i)];
   }
 
+  /// "January 2026"-style label for the month header.
   String _monthLabel(DateTime m) {
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -343,6 +363,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return '${months[m.month - 1]} ${m.year}';
   }
 
+  /// Short `d/mm` date format used in the summary card.
   String _fmt(DateTime d) =>
       '${d.day}/${d.month.toString().padLeft(2, '0')}';
 }

@@ -24,6 +24,7 @@ extension type _Geocoder._(JSObject _) implements JSObject {
   external void geocode(JSObject request, JSFunction callback);
 }
 
+/// Web implementation that talks to the Google Maps JS SDK loaded in index.html.
 class PlacesService {
   _AutocompleteService? _auto;
   _PlacesService? _details;
@@ -36,6 +37,7 @@ class PlacesService {
 
   _Geocoder _geocoderSvc() => _geocoder ??= _Geocoder();
 
+  /// Returns address suggestions via the JS AutocompleteService.
   Future<List<PlaceSuggestion>> autocomplete(String input,
       {String? sessionToken}) async {
     if (input.trim().length < 2) return const [];
@@ -70,6 +72,7 @@ class PlacesService {
     return completer.future;
   }
 
+  /// Resolves a Place id via the JS PlacesService.
   Future<PlaceDetails?> details(String placeId, {String? sessionToken}) async {
     final completer = Completer<PlaceDetails?>();
     final req = <String, dynamic>{
@@ -107,6 +110,7 @@ class PlacesService {
     return completer.future;
   }
 
+  /// Reverse-geocodes coordinates via the JS Geocoder.
   Future<String?> reverseGeocode(double lat, double lng) async {
     final completer = Completer<String?>();
     final req = <String, dynamic>{

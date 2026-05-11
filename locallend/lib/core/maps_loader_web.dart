@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
+/// Injects the Google Maps JS SDK (with Places library) into the document head.
 Future<void> loadGoogleMapsScript(String apiKey) async {
   final completer = Completer<void>();
   final script = web.HTMLScriptElement()

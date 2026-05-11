@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 
+/// Tappable pill showing one category, with selected/unselected styling.
 class CategoryChip extends StatelessWidget {
   const CategoryChip({
     super.key,

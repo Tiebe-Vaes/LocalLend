@@ -9,6 +9,7 @@ import '../../providers/providers.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/item_card.dart';
 
+/// Main browse screen: search bar, category chips and grid of items.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -24,6 +25,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncLocation());
   }
 
+  /// Requests location permission and persists the user's current coords.
   Future<void> _syncLocation() async {
     try {
       var permission = await Geolocator.checkPermission();
@@ -50,6 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  /// Opens the bottom-sheet filter editor.
   void _openFilter() {
     final filter = ref.read(browseFilterProvider);
     showModalBottomSheet(
@@ -223,6 +226,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
+/// Bottom-sheet editor for the [BrowseFilter] (category + radius).
 class _FilterSheet extends ConsumerStatefulWidget {
   const _FilterSheet({required this.initial});
   final BrowseFilter initial;

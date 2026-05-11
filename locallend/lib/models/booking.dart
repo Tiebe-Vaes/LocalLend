@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/utils.dart';
 
+/// Stored status of a booking; the live status is derived from the dates.
 enum BookingStatus { upcoming, active, past, cancelled }
 
+/// A reservation of one item for a specific set of days by one renter.
 class Booking {
   final String id;
   final String itemId;
@@ -28,13 +30,18 @@ class Booking {
     required this.createdAt,
   });
 
+  /// All booked days as `YYYY-MM-DD` strings (used for overlap queries).
   List<String> get dayKeys => days.map(dayKey).toList();
 
+  /// Earliest day in the booking.
   DateTime get firstDay =>
       days.reduce((a, b) => a.isBefore(b) ? a : b);
+  /// Latest day in the booking.
   DateTime get lastDay =>
       days.reduce((a, b) => a.isAfter(b) ? a : b);
 
+  /// Live status derived from [now]: cancelled stays sticky, otherwise
+  /// returns past / active / upcoming based on the booking's days.
   BookingStatus computeStatus(DateTime now) {
     final today = dayOnly(now);
     if (status == BookingStatus.cancelled) return BookingStatus.cancelled;
@@ -44,6 +51,7 @@ class Booking {
     return BookingStatus.upcoming;
   }
 
+  /// Serialises the booking to a Firestore-compatible map.
   Map<String, dynamic> toMap() => {
         'itemId': itemId,
         'itemTitle': itemTitle,
@@ -57,6 +65,7 @@ class Booking {
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
+  /// Hydrates a [Booking] from a Firestore document.
   factory Booking.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
     return Booking(

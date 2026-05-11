@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
 import '../../models/item.dart';
 import '../../providers/providers.dart';
 import '../../widgets/address_field.dart';
@@ -17,6 +18,7 @@ import '../../widgets/category_chip.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rounded_text_field.dart';
 
+/// Form to create a new item listing — title, category, photo, location, etc.
 class AddItemScreen extends ConsumerStatefulWidget {
   const AddItemScreen({super.key});
   @override
@@ -36,7 +38,29 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   bool _saving = false;
   Uint8List? _imageBytes;
   String? _imageBase64;
+  final Set<String> _availDayKeys = {};
 
+  /// Opens the per-day availability picker sheet.
+  Future<void> _pickAvailabilityDays() async {
+    final picked = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (_) => _AvailabilityPicker(initial: _availDayKeys),
+    );
+    if (picked != null) {
+      setState(() {
+        _availDayKeys
+          ..clear()
+          ..addAll(picked);
+      });
+    }
+  }
+
+  /// Opens the image picker, resizes/encodes the result and rejects oversize files.
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picker = ImagePicker();
@@ -73,6 +97,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     }
   }
 
+  /// Shows the gallery/camera/remove sheet for the image field.
   void _showImageSourceSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -124,6 +149,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     super.dispose();
   }
 
+  /// Reads GPS, reverse-geocodes it and prefills the address field.
   Future<void> _useCurrentLocation() async {
     try {
       var p = await Geolocator.checkPermission();
@@ -146,6 +172,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     } catch (_) {}
   }
 
+  /// Stores the picked address and recenters the map.
   void _onAddressPicked(AddressPickResult r) {
     final ll = LatLng(r.lat, r.lng);
     setState(() {
@@ -155,11 +182,18 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15));
   }
 
+  /// Validates the form and writes the new item to Firestore.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_point == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please pick an address.')),
+      );
+      return;
+    }
+    if (_availDayKeys.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please pick at least one available day.')),
       );
       return;
     }
@@ -179,6 +213,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         pricePerDay: double.parse(_price.text.trim()),
         imageUrl: null,
         imageBase64: _imageBase64,
+        availableDayKeys: _availDayKeys.toList()..sort(),
         lat: _point!.latitude,
         lng: _point!.longitude,
         locationLabel: _formattedAddress,
@@ -322,6 +357,46 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: _pickAvailabilityDays,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event_available,
+                        color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Availability',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
+                          const SizedBox(height: 2),
+                          Text(
+                            _availDayKeys.isEmpty
+                                ? 'Tap to select the days this item is available'
+                                : '${_availDayKeys.length} day(s) selected',
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        color: AppColors.textMuted),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
             PrimaryButton(
               label: 'Publish',
@@ -332,5 +407,216 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Bottom-sheet calendar that lets the owner toggle individual available days.
+class _AvailabilityPicker extends StatefulWidget {
+  const _AvailabilityPicker({required this.initial});
+  final Set<String> initial;
+
+  @override
+  State<_AvailabilityPicker> createState() => _AvailabilityPickerState();
+}
+
+class _AvailabilityPickerState extends State<_AvailabilityPicker> {
+  late final Set<String> _selected = {...widget.initial};
+  late DateTime _month =
+      DateTime(DateTime.now().year, DateTime.now().month);
+
+  /// Adds or removes a single day from the selection.
+  void _toggle(DateTime day) {
+    final k = dayKey(day);
+    setState(() {
+      if (_selected.contains(k)) {
+        _selected.remove(k);
+      } else {
+        _selected.add(k);
+      }
+    });
+  }
+
+  /// Bulk-select or bulk-clear all eligible days of the visible month.
+  void _selectMonth({bool select = true}) {
+    final tomorrow = dayOnly(DateTime.now()).add(const Duration(days: 1));
+    final last = DateTime(_month.year, _month.month + 1, 0).day;
+    setState(() {
+      for (var i = 1; i <= last; i++) {
+        final d = DateTime(_month.year, _month.month, i);
+        if (d.isBefore(tomorrow)) continue;
+        final k = dayKey(d);
+        if (select) {
+          _selected.add(k);
+        } else {
+          _selected.remove(k);
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tomorrow = dayOnly(DateTime.now()).add(const Duration(days: 1));
+    final last = DateTime(_month.year, _month.month + 1, 0).day;
+    final firstWeekday = DateTime(_month.year, _month.month, 1).weekday;
+    final cells = <DateTime?>[
+      for (var i = 1; i < firstWeekday; i++) null,
+      for (var i = 1; i <= last; i++) DateTime(_month.year, _month.month, i),
+    ];
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (_, scrollCtrl) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Pick available days',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+                Text('${_selected.length} selected',
+                    style: const TextStyle(color: AppColors.textMuted)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => setState(() => _month =
+                      DateTime(_month.year, _month.month - 1)),
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _monthLabel(_month),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 16),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => setState(() => _month =
+                      DateTime(_month.year, _month.month + 1)),
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => _selectMonth(select: true),
+                  child: const Text('Select month'),
+                ),
+                TextButton(
+                  onPressed: () => _selectMonth(select: false),
+                  child: const Text('Clear month'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: const ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                  .map((d) => Expanded(
+                        child: Center(
+                          child: Text(d,
+                              style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: GridView.builder(
+                controller: scrollCtrl,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 6,
+                  crossAxisSpacing: 6,
+                ),
+                itemCount: cells.length,
+                itemBuilder: (_, i) {
+                  final day = cells[i];
+                  if (day == null) return const SizedBox.shrink();
+                  final tooEarly = dayOnly(day).isBefore(tomorrow);
+                  final selected = _selected.contains(dayKey(day));
+                  return GestureDetector(
+                    onTap: tooEarly ? null : () => _toggle(day),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: tooEarly
+                            ? AppColors.background
+                            : (selected
+                                ? AppColors.primary
+                                : AppColors.surface),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.primaryDark
+                              : AppColors.border,
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${day.day}',
+                          style: TextStyle(
+                            color: tooEarly
+                                ? AppColors.textMuted
+                                : (selected
+                                    ? Colors.white
+                                    : AppColors.textPrimary),
+                            decoration: tooEarly
+                                ? TextDecoration.lineThrough
+                                : null,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: PrimaryButton(
+                label: 'Done',
+                onPressed: () => Navigator.pop(context, _selected),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "January 2026"-style label for the month header.
+  String _monthLabel(DateTime m) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[m.month - 1]} ${m.year}';
   }
 }

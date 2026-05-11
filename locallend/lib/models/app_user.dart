@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// User profile mirrored from the `users/{uid}` Firestore document.
 class AppUser {
   final String id;
   final String email;
@@ -19,6 +20,7 @@ class AppUser {
     required this.createdAt,
   });
 
+  /// Returns a new instance with the given fields overridden.
   AppUser copyWith({
     String? displayName,
     double? lat,
@@ -34,6 +36,7 @@ class AppUser {
         createdAt: createdAt,
       );
 
+  /// Serialises the user to a Firestore-compatible map.
   Map<String, dynamic> toMap() => {
         'email': email,
         'displayName': displayName,
@@ -43,6 +46,7 @@ class AppUser {
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
+  /// Hydrates an [AppUser] from a Firestore document.
   factory AppUser.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
     return AppUser(

@@ -1,13 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/utils.dart';
+
 /// Idempotent demo seeder. Writes a few sample items if the `items`
 /// collection is empty. Safe to call on every launch.
+/// Seeds and reseeds the demo Firestore data.
 class SeedService {
   SeedService(this._db);
   final FirebaseFirestore _db;
 
-  static const _flag = 'seeded_v1';
+  static const _flag = 'seeded_v2';
 
+  /// Writes the demo dataset on first launch; no-op once `seeded_v2` is recorded.
   Future<void> seedIfEmpty() async {
     final meta = await _db.collection('meta').doc(_flag).get();
     if (meta.exists) return;
@@ -15,6 +19,7 @@ class SeedService {
     final batch = _db.batch();
     final col = _db.collection('items');
     final now = Timestamp.fromDate(DateTime.now());
+    final defaultAvail = _next30Days();
 
     final samples = <Map<String, dynamic>>[
       {
@@ -82,10 +87,49 @@ class SeedService {
         'ownerId': 'demo_owner',
         'ownerName': 'Demo Owner',
         'available': true,
+        'availableDayKeys': defaultAvail,
         'createdAt': now,
       });
     }
     batch.set(_db.collection('meta').doc(_flag), {'seededAt': now});
     await batch.commit();
+  }
+
+  /// Destroys all items, bookings and reviews, then reseeds demo data.
+  /// Intended for the in-app "Reseed" button — wipes everything visible.
+  Future<void> reseedAll() async {
+    await _clearCollection('items');
+    await _clearCollection('bookings');
+    await _clearCollection('reviews');
+    await _clearCollection('meta');
+    await seedIfEmpty();
+  }
+
+  /// Day-keys for the 30 days starting tomorrow, used as default availability.
+  List<String> _next30Days() {
+    final start = dayOnly(DateTime.now()).add(const Duration(days: 1));
+    return [
+      for (var i = 0; i < 30; i++)
+        dayKey(start.add(Duration(days: i))),
+    ];
+  }
+
+  /// Deletes every document in [name] in 450-op batches.
+  Future<void> _clearCollection(String name) async {
+    final snap = await _db.collection(name).get();
+    if (snap.docs.isEmpty) return;
+    // Batch is capped at 500 ops.
+    var batch = _db.batch();
+    var count = 0;
+    for (final d in snap.docs) {
+      batch.delete(d.reference);
+      count++;
+      if (count == 450) {
+        await batch.commit();
+        batch = _db.batch();
+        count = 0;
+      }
+    }
+    if (count > 0) await batch.commit();
   }
 }

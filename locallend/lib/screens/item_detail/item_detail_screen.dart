@@ -5,6 +5,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../../models/app_user.dart';
+import '../../models/booking.dart';
+import '../../models/item.dart';
 import '../../models/review.dart';
 import '../../providers/providers.dart';
 import '../../widgets/item_image.dart';
@@ -13,6 +17,7 @@ import '../../widgets/rating_stars.dart';
 import '../../widgets/rounded_text_field.dart';
 import '../../widgets/section_header.dart';
 
+/// Full detail page for one item: photo, map, reviews and rent CTA.
 class ItemDetailScreen extends ConsumerWidget {
   const ItemDetailScreen({super.key, required this.itemId});
   final String itemId;
@@ -62,7 +67,7 @@ class ItemDetailScreen extends ConsumerWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
+                                color: Colors.black.withValues(alpha: 0.12),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -208,26 +213,66 @@ class ItemDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          bottomSheet: Container(
-            color: AppColors.background,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: SafeArea(
-              top: false,
-              child: PrimaryButton(
-                label: item.available ? 'Rent now' : 'Unavailable',
-                icon: Icons.calendar_today_outlined,
-                onPressed: item.available
-                    ? () => context.push('/item/${item.id}/book')
-                    : null,
-              ),
-            ),
-          ),
+          bottomSheet: _RentBottomBar(item: item, me: me),
         );
       },
     );
   }
 }
 
+/// Sticky bottom bar whose label adapts to ownership and live bookings.
+class _RentBottomBar extends ConsumerWidget {
+  const _RentBottomBar({required this.item, required this.me});
+  final Item item;
+  final AppUser? me;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOwner = me != null && me!.id == item.ownerId;
+    final bookingsAsync = ref.watch(bookingsByItemProvider(item.id));
+
+    String label;
+    VoidCallback? onPressed;
+
+    if (isOwner) {
+      label = 'Your listing';
+      onPressed = null;
+    } else if (!item.available) {
+      label = 'Unavailable';
+      onPressed = null;
+    } else {
+      final today = dayOnly(DateTime.now());
+      final rentedToday = bookingsAsync.maybeWhen(
+        data: (list) => list.any((b) =>
+            b.status != BookingStatus.cancelled &&
+            b.days.any((d) => dayOnly(d) == today)),
+        orElse: () => false,
+      );
+      if (rentedToday) {
+        label = 'Currently rented';
+        onPressed = null;
+      } else {
+        label = 'Rent now';
+        onPressed = () => context.push('/item/${item.id}/book');
+      }
+    }
+
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      child: SafeArea(
+        top: false,
+        child: PrimaryButton(
+          label: label,
+          icon: Icons.calendar_today_outlined,
+          onPressed: onPressed,
+        ),
+      ),
+    );
+  }
+}
+
+/// One review row showing name, stars and comment text.
 class _ReviewTile extends StatelessWidget {
   const _ReviewTile({required this.review});
   final Review review;
@@ -252,6 +297,7 @@ class _ReviewTile extends StatelessWidget {
   }
 }
 
+/// Inline form for the current user to submit a review.
 class _AddReviewBox extends ConsumerStatefulWidget {
   const _AddReviewBox({required this.itemId});
   final String itemId;
@@ -270,6 +316,7 @@ class _AddReviewBoxState extends ConsumerState<_AddReviewBox> {
     super.dispose();
   }
 
+  /// Persists the review through [ReviewRepository] and clears the form.
   Future<void> _submit() async {
     final me = ref.read(appUserProvider).value;
     if (me == null || _ctrl.text.trim().isEmpty) return;

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/utils.dart';
 import '../models/booking.dart';
 
+/// CRUD + live streams for the `bookings` collection.
 class BookingRepository {
   BookingRepository(this._db);
   final FirebaseFirestore _db;
@@ -10,22 +11,26 @@ class BookingRepository {
   CollectionReference<Map<String, dynamic>> get _bookings =>
       _db.collection('bookings');
 
+  /// Live stream of all bookings made by [renterId].
   Stream<List<Booking>> watchByRenter(String renterId) => _bookings
       .where('renterId', isEqualTo: renterId)
       .snapshots()
       .map((s) => s.docs.map(Booking.fromDoc).toList());
 
+  /// Live stream of every booking on items owned by [ownerId].
   Stream<List<Booking>> watchByOwner(String ownerId) => _bookings
       .where('ownerId', isEqualTo: ownerId)
       .snapshots()
       .map((s) => s.docs.map(Booking.fromDoc).toList());
 
+  /// Live stream of every booking attached to [itemId].
   Stream<List<Booking>> watchByItem(String itemId) => _bookings
       .where('itemId', isEqualTo: itemId)
       .snapshots()
       .map((s) => s.docs.map(Booking.fromDoc).toList());
 
-  /// Creates a booking, rejecting any day that is already booked.
+  /// Transactionally creates a booking, rejecting any day that is already
+  /// booked on the same item — prevents two renters claiming the same day.
   Future<Booking> createBooking(Booking booking) async {
     return _db.runTransaction<Booking>((tx) async {
       final query = await _bookings
@@ -52,6 +57,7 @@ class BookingRepository {
     });
   }
 
+  /// Returns the day-keys already taken for [itemId] (regardless of status).
   Future<Set<String>> bookedDayKeysForItem(String itemId) async {
     final snap = await _bookings.where('itemId', isEqualTo: itemId).get();
     final result = <String>{};
@@ -62,8 +68,10 @@ class BookingRepository {
     return result;
   }
 
+  /// Marks a booking as cancelled (kept in history, hidden from active rentals).
   Future<void> cancel(String bookingId) =>
       _bookings.doc(bookingId).update({'status': BookingStatus.cancelled.name});
 
+  /// Convenience pass-through to [dayKey] for callers that only see the repo.
   String dayKeyFor(DateTime d) => dayKey(d);
 }

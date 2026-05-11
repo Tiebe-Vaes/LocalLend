@@ -6,6 +6,7 @@ import '../core/utils.dart';
 import '../models/item.dart';
 import 'item_image.dart';
 
+/// Compact item preview used in lists/grids; opens detail on tap.
 class ItemCard extends StatelessWidget {
   const ItemCard({
     super.key,
@@ -38,7 +39,7 @@ class ItemCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.md),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

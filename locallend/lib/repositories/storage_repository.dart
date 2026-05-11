@@ -3,6 +3,7 @@
 // To enable images, use an external image hosting service or enable Storage
 // in a different region and update this implementation.
 
+/// Legacy upload entry point; kept while the app stores images inline as base64.
 class StorageRepository {
   StorageRepository();
 

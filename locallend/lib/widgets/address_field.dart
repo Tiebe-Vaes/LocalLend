@@ -8,6 +8,7 @@ import '../core/theme.dart';
 import '../providers/providers.dart';
 import '../services/places_service.dart';
 
+/// Payload emitted when the user picks an address suggestion.
 class AddressPickResult {
   final double lat;
   final double lng;
@@ -19,6 +20,7 @@ class AddressPickResult {
   });
 }
 
+/// Text field with Google Places autocomplete shown in a floating overlay.
 class AddressField extends ConsumerStatefulWidget {
   const AddressField({
     super.key,
@@ -64,6 +66,7 @@ class _AddressFieldState extends ConsumerState<AddressField> {
     super.dispose();
   }
 
+  /// Hides the suggestion overlay when focus is lost.
   void _onFocusChange() {
     if (!_focusNode.hasFocus) {
       Future.delayed(const Duration(milliseconds: 150), _removeOverlay);
@@ -72,6 +75,7 @@ class _AddressFieldState extends ConsumerState<AddressField> {
     }
   }
 
+  /// Debounced query — fires Places autocomplete and shows results.
   void _onChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 280), () async {
@@ -97,6 +101,7 @@ class _AddressFieldState extends ConsumerState<AddressField> {
     });
   }
 
+  /// Fetches details for the tapped suggestion and notifies the parent.
   Future<void> _select(PlaceSuggestion s) async {
     _removeOverlay();
     _focusNode.unfocus();
@@ -112,6 +117,7 @@ class _AddressFieldState extends ConsumerState<AddressField> {
     ));
   }
 
+  /// Builds and inserts the suggestion list overlay below the field.
   void _showOverlay() {
     _removeOverlay();
     final renderBox = context.findRenderObject() as RenderBox?;
@@ -159,6 +165,7 @@ class _AddressFieldState extends ConsumerState<AddressField> {
     Overlay.of(context).insert(_overlay!);
   }
 
+  /// Tears down any active overlay.
   void _removeOverlay() {
     _overlay?.remove();
     _overlay = null;

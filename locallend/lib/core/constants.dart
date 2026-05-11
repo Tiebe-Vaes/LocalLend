@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+/// One of the fixed categories an item can belong to.
 class ItemCategory {
   final String id;
   final String label;
   final IconData icon;
   const ItemCategory(this.id, this.label, this.icon);
 }
+
+/// All categories shown in chips/filters across the app.
 
 const kCategories = <ItemCategory>[
   ItemCategory('kitchen', 'Kitchen', Icons.kitchen),
@@ -16,6 +19,7 @@ const kCategories = <ItemCategory>[
   ItemCategory('other', 'Other', Icons.category),
 ];
 
+/// Looks up a category by id, falling back to `other` when not found.
 ItemCategory categoryById(String id) =>
     kCategories.firstWhere((c) => c.id == id, orElse: () => kCategories.last);
 

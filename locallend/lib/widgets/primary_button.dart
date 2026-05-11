@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Full-width brand-styled elevated button with optional loading + icon.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,

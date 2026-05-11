@@ -7,6 +7,7 @@ import '../../providers/providers.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rounded_text_field.dart';
 
+/// New-account screen: name + email + password.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
   @override
@@ -29,6 +30,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  /// Validates the form and creates the user via Firebase Auth.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {

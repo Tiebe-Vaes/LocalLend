@@ -15,6 +15,7 @@ import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/seed_service.dart';
 
+/// Boots Firebase, notifications and demo data, then runs the app.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

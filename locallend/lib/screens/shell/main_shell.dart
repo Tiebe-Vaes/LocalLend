@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Bottom-tab scaffold hosting the five top-level routes.
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
