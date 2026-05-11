@@ -37,7 +37,7 @@ android {
     defaultConfig {
         applicationId = "com.example.locallend"
         // Firebase Auth needs 23, google_maps_flutter needs 21.
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

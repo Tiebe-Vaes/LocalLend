@@ -32,7 +32,7 @@
 ## Screenshots
 
 > TODO: voeg hier screenshots toe van:
-> - Home scherm
-> - Item Detail scherm
-> - Booking scherm
-> - Google Maps adres selectie
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
