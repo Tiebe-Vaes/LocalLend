@@ -230,6 +230,23 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15));
   }
 
+  /// Clears all form fields so the screen is fresh for the next listing.
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    _title.clear();
+    _desc.clear();
+    _price.clear();
+    _address.clear();
+    setState(() {
+      _categoryId = kCategories.first.id;
+      _point = null;
+      _formattedAddress = '';
+      _imageBytes = null;
+      _imageBase64 = null;
+      _availDayKeys.clear();
+    });
+  }
+
   /// Validates the form and writes the new item to Firestore.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -274,6 +291,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         if (mounted) context.pop();
       } else {
         await itemRepo.addItem(item);
+        _resetForm();
         if (mounted) context.go('/home');
       }
     } catch (e) {
