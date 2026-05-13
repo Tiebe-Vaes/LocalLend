@@ -44,6 +44,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, s) =>
                 BookingScreen(itemId: s.pathParameters['id']!),
           ),
+          GoRoute(
+            path: 'edit',
+            builder: (_, s) =>
+                EditItemRoute(itemId: s.pathParameters['id']!),
+          ),
         ],
       ),
       StatefulShellRoute.indexedStack(

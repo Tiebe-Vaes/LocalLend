@@ -310,6 +310,17 @@ class _ListingTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bookingsAsync = ref.watch(bookingsByItemProvider(item.id));
+    final now = DateTime.now();
+    final activeBookings = bookingsAsync.value
+            ?.where((b) => b.computeStatus(now) == BookingStatus.active)
+            .toList() ??
+        const <Booking>[];
+    final upcomingBookings = bookingsAsync.value
+            ?.where((b) => b.computeStatus(now) == BookingStatus.upcoming)
+            .toList() ??
+        const <Booking>[];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
@@ -318,37 +329,149 @@ class _ListingTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(
-                  item.available ? 'Available' : 'Unavailable',
-                  style: TextStyle(
-                    color: item.available
-                        ? AppColors.success
-                        : AppColors.danger,
-                    fontWeight: FontWeight.w600,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.available ? 'Available' : 'Unavailable',
+                      style: TextStyle(
+                        color: item.available
+                            ? AppColors.success
+                            : AppColors.danger,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              Switch(
+                value: item.available,
+                activeThumbColor: AppColors.primary,
+                onChanged: (v) => ref
+                    .read(itemRepositoryProvider)
+                    .updateAvailability(item.id, v),
+              ),
+              IconButton(
+                tooltip: 'Edit',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => context.push('/item/${item.id}/edit'),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () => context.push('/item/${item.id}'),
+              ),
+            ],
+          ),
+          if (activeBookings.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final b in activeBookings)
+              _RentedOutBanner(booking: b, isActive: true),
+          ],
+          if (upcomingBookings.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final b in upcomingBookings)
+              _RentedOutBanner(booking: b, isActive: false),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Banner showing who has rented an owner's item and when, with a cancel action.
+class _RentedOutBanner extends ConsumerWidget {
+  const _RentedOutBanner({required this.booking, required this.isActive});
+  final Booking booking;
+  final bool isActive;
+
+  void _confirmCancel(BuildContext context, WidgetRef ref) {
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(bookingRepositoryProvider);
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Cancel reservation?'),
+        content: Text(
+            'Cancel ${booking.renterName}\'s reservation for "${booking.itemTitle}"? They will see this in their dashboard as cancelled.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Keep'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              try {
+                await repo.cancel(booking.id);
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Reservation cancelled')),
+                );
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Cancel failed: $e')),
+                );
+              }
+            },
+            child: const Text('Cancel reservation',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = DateFormat.MMMd();
+    final color = isActive ? AppColors.primary : AppColors.textMuted;
+    final label = isActive ? 'Currently rented by' : 'Reserved by';
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(isActive ? Icons.lock_clock : Icons.event,
+                  size: 16, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$label ${booking.renterName} · ${f.format(booking.firstDay)} – ${f.format(booking.lastDay)}',
+                  style: TextStyle(color: color, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.close, size: 16),
+              label: const Text('Cancel reservation'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: const BorderSide(color: AppColors.danger),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+              ),
+              onPressed: () => _confirmCancel(context, ref),
             ),
-          ),
-          Switch(
-            value: item.available,
-            activeThumbColor: AppColors.primary,
-            onChanged: (v) => ref
-                .read(itemRepositoryProvider)
-                .updateAvailability(item.id, v),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () => context.push('/item/${item.id}'),
           ),
         ],
       ),

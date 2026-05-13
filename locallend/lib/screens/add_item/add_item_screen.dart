@@ -18,9 +18,33 @@ import '../../widgets/category_chip.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/rounded_text_field.dart';
 
-/// Form to create a new item listing — title, category, photo, location, etc.
+/// Loads an item by id then renders [AddItemScreen] prefilled for editing.
+class EditItemRoute extends ConsumerWidget {
+  const EditItemRoute({super.key, required this.itemId});
+  final String itemId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(itemProvider(itemId));
+    return async.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) =>
+          Scaffold(body: Center(child: Text('Failed to load: $e'))),
+      data: (item) {
+        if (item == null) {
+          return const Scaffold(
+              body: Center(child: Text('Item not found.')));
+        }
+        return AddItemScreen(existing: item);
+      },
+    );
+  }
+}
+
+/// Form to create or edit an item listing. Pass [existing] to edit.
 class AddItemScreen extends ConsumerStatefulWidget {
-  const AddItemScreen({super.key});
+  const AddItemScreen({super.key, this.existing});
+  final Item? existing;
   @override
   ConsumerState<AddItemScreen> createState() => _AddItemScreenState();
 }
@@ -39,6 +63,30 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   Uint8List? _imageBytes;
   String? _imageBase64;
   final Set<String> _availDayKeys = {};
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      _title.text = e.title;
+      _desc.text = e.description;
+      _price.text = e.pricePerDay.toString();
+      _address.text = e.locationLabel;
+      _formattedAddress = e.locationLabel;
+      _categoryId = e.categoryId;
+      _point = LatLng(e.lat, e.lng);
+      _imageBase64 = e.imageBase64;
+      if (e.imageBase64 != null) {
+        try {
+          _imageBytes = base64Decode(e.imageBase64!);
+        } catch (_) {}
+      }
+      _availDayKeys.addAll(e.availableDayKeys);
+    }
+  }
 
   /// Opens the per-day availability picker sheet.
   Future<void> _pickAvailabilityDays() async {
@@ -202,25 +250,32 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     setState(() => _saving = true);
     try {
       final itemRepo = ref.read(itemRepositoryProvider);
+      final existing = widget.existing;
 
       final item = Item(
-        id: '',
-        ownerId: me.id,
-        ownerName: me.displayName,
+        id: existing?.id ?? '',
+        ownerId: existing?.ownerId ?? me.id,
+        ownerName: existing?.ownerName ?? me.displayName,
         title: _title.text.trim(),
         description: _desc.text.trim(),
         categoryId: _categoryId,
         pricePerDay: double.parse(_price.text.trim()),
-        imageUrl: null,
+        imageUrl: existing?.imageUrl,
         imageBase64: _imageBase64,
+        available: existing?.available ?? true,
         availableDayKeys: _availDayKeys.toList()..sort(),
         lat: _point!.latitude,
         lng: _point!.longitude,
         locationLabel: _formattedAddress,
-        createdAt: DateTime.now(),
+        createdAt: existing?.createdAt ?? DateTime.now(),
       );
-      await itemRepo.addItem(item);
-      if (mounted) context.go('/home');
+      if (_isEditing) {
+        await itemRepo.updateItem(item);
+        if (mounted) context.pop();
+      } else {
+        await itemRepo.addItem(item);
+        if (mounted) context.go('/home');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -235,7 +290,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   Widget build(BuildContext context) {
     final initial = _point ?? const LatLng(51.2194, 4.4025);
     return Scaffold(
-      appBar: AppBar(title: const Text('List an item')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit item' : 'List an item')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -399,7 +454,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             ),
             const SizedBox(height: 20),
             PrimaryButton(
-              label: 'Publish',
+              label: _isEditing ? 'Save changes' : 'Publish',
               loading: _saving,
               onPressed: _submit,
             ),

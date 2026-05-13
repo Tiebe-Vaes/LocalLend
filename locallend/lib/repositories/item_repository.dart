@@ -39,6 +39,10 @@ class ItemRepository {
     return ref.id;
   }
 
+  /// Overwrites an existing item with the given snapshot.
+  Future<void> updateItem(Item item) =>
+      _items.doc(item.id).set(item.toMap(), SetOptions(merge: true));
+
   /// Flips the manual on/off availability flag for an item.
   Future<void> updateAvailability(String id, bool available) =>
       _items.doc(id).update({'available': available});
